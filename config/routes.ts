@@ -38,40 +38,33 @@ export default [
 		icon: 'ArrowsAltOutlined',
 	},
 	{
-		path: '/game',
-		name: 'Trò chơi',
-		icon: 'ScissorOutlined', // Icon hiển thị trên menu
-		component: './Game', // Đường dẫn đến component Game
-	  },
-	
-	  {
-		path: '/question-bank',
-		name: 'Ngân hàng câu hỏi',
-		icon: 'BookOutlined',
+		path: '/spa',
+		name: 'Spa Services',
+		icon: 'HeartOutlined',
 		routes: [
 		  {
-			path: '/question-bank/categories',
-			name: 'Danh mục khối kiến thức',
-			component: '@/pages/QuestionBank/Categories',
+			path: '/spa/appointments',
+			name: 'Appointments',
+			component: './Spa/Appointments/index',
 		  },
 		  {
-			path: '/question-bank/subjects',
-			name: 'Danh mục môn học',
-			component: '@/pages/QuestionBank/Subjects',
+			path: '/spa/employees-services',
+			name: 'Employees & Services',
+			component: './Spa/EmployeesServices/index',
 		  },
 		  {
-			path: '/question-bank/questions',
-			name: 'Quản lý câu hỏi',
-			component: '@/pages/QuestionBank/Questions',
+			path: '/spa/reports',
+			name: 'Reports',
+			component: './Spa/Reports/index',
 		  },
 		  {
-			path: '/question-bank/exams',
-			name: 'Quản lý đề thi',
-			component: '@/pages/QuestionBank/Exams',
+			path: '/spa/reviews',
+			name: 'Reviews',
+			component: './Spa/Reviews/index',
 		  },
 		],
 	  },
-
+	  
 	
 	
 	// DANH MUC HE THONG
