@@ -1,4 +1,3 @@
-// components/Reviews.tsx
 import { Table, Button, Modal, Form, Input, Rate, message, Select } from "antd";
 import { useState } from "react";
 import { Review, saveReviews, calculateAverageRating } from "@/services/Spa/Reviews";
@@ -28,7 +27,10 @@ interface Props {
 
 const ReviewsComponent: React.FC<Props> = ({ reviews, setReviews }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isResponseModalOpen, setIsResponseModalOpen] = useState(false);
   const [form] = Form.useForm();
+  const [responseForm] = Form.useForm();
+  const [selectedReview, setSelectedReview] = useState<Review | null>(null);
 
   const submitReview = (values: Omit<Review, "id" | "response">) => {
     if (!values.rating) {
@@ -44,6 +46,17 @@ const ReviewsComponent: React.FC<Props> = ({ reviews, setReviews }) => {
     message.success("Đánh giá đã được thêm!");
   };
 
+  const submitResponse = (values: { response: string }) => {
+    if (!selectedReview) return;
+    const updatedReviews = reviews.map((review) =>
+      review.id === selectedReview.id ? { ...review, response: values.response } : review
+    );
+    setReviews(updatedReviews);
+    saveReviews(updatedReviews);
+    setIsResponseModalOpen(false);
+    responseForm.resetFields();
+    message.success("Phản hồi đã được gửi!");
+  };
 
   const columns = [
     { title: "Tên khách hàng", dataIndex: "customer", key: "customer" },
@@ -66,7 +79,16 @@ const ReviewsComponent: React.FC<Props> = ({ reviews, setReviews }) => {
       title: "Hành động",
       key: "action",
       render: (_: any, record: Review) => (
-        <Button type="link">Phản hồi</Button>
+        <Button
+          type="link"
+          onClick={() => {
+            setSelectedReview(record);
+            responseForm.setFieldsValue({ response: record.response || "" });
+            setIsResponseModalOpen(true);
+          }}
+        >
+          Phản hồi
+        </Button>
       ),
     }
   ];
@@ -112,6 +134,15 @@ const ReviewsComponent: React.FC<Props> = ({ reviews, setReviews }) => {
             <Rate />
           </Form.Item>
           <Form.Item name="comment" label="Bình luận"><Input.TextArea /></Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal Phản hồi */}
+      <Modal title="Phản hồi đánh giá" visible={isResponseModalOpen} onCancel={() => setIsResponseModalOpen(false)} onOk={() => responseForm.submit()} okText="Gửi phản hồi" cancelText="Hủy">
+        <Form form={responseForm} onFinish={submitResponse} layout="vertical">
+          <Form.Item name="response" label="Phản hồi" rules={[{ required: true, message: "Vui lòng nhập phản hồi!" }]}>
+            <Input.TextArea />
+          </Form.Item>
         </Form>
       </Modal>
     </>
