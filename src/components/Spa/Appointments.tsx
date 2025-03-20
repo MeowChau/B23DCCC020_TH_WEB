@@ -47,9 +47,9 @@ const Appointments = ({ appointments, isModalOpen, setIsModalOpen, bookAppointme
             key: "status",
             render: (status, record) => (
               <Select value={status} style={{ width: 120 }} onChange={(newStatus) => updateStatus(record.id, newStatus)}>
-                {Object.keys(statusColors).map((status) => (
-                  <Select.Option key={status} value={status}>
-                    <Tag color={statusColors[status]}>{status}</Tag>
+                {Object.keys(statusColors).map((statusKey) => (
+                  <Select.Option key={statusKey} value={statusKey}>
+                    <Tag color={statusColors[statusKey]}>{statusKey}</Tag>
                   </Select.Option>
                 ))}
               </Select>

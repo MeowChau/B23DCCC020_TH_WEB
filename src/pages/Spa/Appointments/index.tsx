@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import Appointments from "@/components/Spa/Appointments";
+import Appointments from '@/components/Spa/Appointments';
 import { getAppointments, bookAppointment, updateStatus } from "@/services/Spa/appointments";
 
 const AppointmentsPage = () => {
