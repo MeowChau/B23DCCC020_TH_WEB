@@ -37,35 +37,50 @@ export default [
 		component: './RandomUser',
 		icon: 'ArrowsAltOutlined',
 	},
-	{
-		path: '/spa',
-		name: 'Spa Services',
-		icon: 'HeartOutlined',
-		routes: [
-		  {
-			path: '/spa/appointments',
-			name: 'Appointments',
-			component: './Spa/Appointments/index',
-		  },
-		  {
-			path: '/spa/employees-services',
-			name: 'Employees & Services',
-			component: './Spa/EmployeesServices/index',
-		  },
-		  {
-			path: '/spa/reports',
-			name: 'Reports',
-			component: './Spa/Reports/index',
-		  },
-		  {
-			path: '/spa/reviews',
-			name: 'Reviews',
-			component: './Spa/Reviews/index',
-		  },
-		],
-	  },
-	  
 	
+	   ///////////////////////////////////
+    // MENU SỔ VĂN BẰNG
+    {
+        path: '/so-van-bang',
+        name: 'Sổ Văn Bằng',
+        icon: 'BookOutlined',
+        routes: [
+            {
+                path: '/so-van-bang/quan-ly',
+                name: 'Quản Lý Sổ Văn Bằng',
+                component: './SoVanBang/QuanLySoVanBang',
+            },
+            {
+                path: '/so-van-bang/thong-tin',
+                name: 'Thông Tin Văn Bằng',
+                component: './SoVanBang/ThongTinVanBang',
+            },
+        ],
+    },
+
+    ///////////////////////////////////
+    // MENU CẤU HÌNH
+    {
+        path: '/cau-hinh',
+        name: 'Cấu Hình',
+        icon: 'SettingOutlined',
+        routes: [
+            {
+                path: '/cau-hinh/bieu-mau-phu-luc',
+                name: 'Biểu Mẫu Phụ Lục',
+                component: './CauHinh/BieuMauPhuLuc',
+            },
+        ],
+    },
+
+    ///////////////////////////////////
+    // MENU TRA CỨU
+    {
+        path: '/tra-cuu',
+        name: 'Tra Cứu Văn Bằng',
+        icon: 'SearchOutlined',
+        component: './TraCuu',
+    },
 	
 	// DANH MUC HE THONG
 	// {
