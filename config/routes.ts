@@ -1,5 +1,4 @@
-﻿
-export default [
+﻿export default [
 	{
 		path: '/user',
 		layout: false,
@@ -18,7 +17,7 @@ export default [
 	},
 
 	///////////////////////////////////
-	// DEFAULT MENU
+// DEFAULT MENU
 	{
 		path: '/dashboard',
 		name: 'Dashboard',
@@ -37,50 +36,12 @@ export default [
 		component: './RandomUser',
 		icon: 'ArrowsAltOutlined',
 	},
-	
-	   ///////////////////////////////////
-    // MENU SỔ VĂN BẰNG
-    {
-        path: '/so-van-bang',
-        name: 'Sổ Văn Bằng',
-        icon: 'BookOutlined',
-        routes: [
-            {
-                path: '/so-van-bang/quan-ly',
-                name: 'Quản Lý Sổ Văn Bằng',
-                component: './SoVanBang/QuanLySoVanBang',
-            },
-            {
-                path: '/so-van-bang/thong-tin',
-                name: 'Thông Tin Văn Bằng',
-                component: './SoVanBang/ThongTinVanBang',
-            },
-        ],
-    },
-
-    ///////////////////////////////////
-    // MENU CẤU HÌNH
-    {
-        path: '/cau-hinh',
-        name: 'Cấu Hình',
-        icon: 'SettingOutlined',
-        routes: [
-            {
-                path: '/cau-hinh/bieu-mau-phu-luc',
-                name: 'Biểu Mẫu Phụ Lục',
-                component: './CauHinh/BieuMauPhuLuc',
-            },
-        ],
-    },
-
-    ///////////////////////////////////
-    // MENU TRA CỨU
-    {
-        path: '/tra-cuu',
-        name: 'Tra Cứu Văn Bằng',
-        icon: 'SearchOutlined',
-        component: './TraCuu',
-    },
+	{
+		name: 'Quản lý đơn hàng',
+		path: '/don-hang',
+		icon: 'ShoppingCartOutlined',
+		component: './Order/OrderPage', 
+	  },
 	
 	// DANH MUC HE THONG
 	// {
@@ -96,6 +57,7 @@ export default [
 	// 	],
 	// },
 
+	
 	{
 		path: '/notification',
 		routes: [
