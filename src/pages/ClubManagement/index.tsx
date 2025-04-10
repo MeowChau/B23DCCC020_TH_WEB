@@ -22,7 +22,7 @@ const ClubManagement: React.FC = () => {
   const [memberModalVisible, setMemberModalVisible] = useState(false);
   const [editingClub, setEditingClub] = useState<Club | null>(null);
   const [clubs, setClubs] = useState<Club[]>([]);
-  const [members, setMembers] = useState([]); // Danh sách thành viên của CLB được chọn
+  const [members, setMembers] = useState<string[]>([]); // Danh sách thành viên của CLB được chọn
   const [searchText, setSearchText] = useState('');
 
   // Hàm tải dữ liệu từ localStorage
@@ -79,6 +79,17 @@ const ClubManagement: React.FC = () => {
 
   const handleSearch = (value: string) => {
     setSearchText(value);
+  };
+
+  const handleViewMembers = (clubId: string) => {
+    const storedClubs = JSON.parse(localStorage.getItem('clubs') || '[]');
+    const club = storedClubs.find((c: Club) => c.id === clubId);
+    if (club && club.members) {
+      setMembers(club.members.map((member: { name: string }) => member.name)); // Lấy danh sách tên thành viên
+    } else {
+      setMembers([]);
+    }
+    setMemberModalVisible(true);
   };
 
   const filteredClubs = clubs.filter((club) =>
@@ -140,10 +151,7 @@ const ClubManagement: React.FC = () => {
           <Button
             type="link"
             icon={<TeamOutlined />}
-            onClick={() => {
-              setMembers([]); // TODO: Lấy danh sách thành viên từ API hoặc localStorage
-              setMemberModalVisible(true);
-            }}
+            onClick={() => handleViewMembers(record.id)} // Hiển thị danh sách thành viên
           >
             Thành viên
           </Button>
@@ -216,7 +224,7 @@ const ClubManagement: React.FC = () => {
       <MemberListModal
         visible={memberModalVisible}
         onCancel={() => setMemberModalVisible(false)}
-        members={members}
+        members={members} // Truyền danh sách thành viên vào modal
       />
     </PageContainer>
   );

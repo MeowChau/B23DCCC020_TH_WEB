@@ -5,7 +5,7 @@ import type { Member } from '@/models/club';
 interface MemberListModalProps {
   visible: boolean;
   onCancel: () => void;
-  members: Member[];
+  members: Member[]; // Danh sách thành viên
 }
 
 const MemberListModal: React.FC<MemberListModalProps> = ({ visible, onCancel, members }) => {
