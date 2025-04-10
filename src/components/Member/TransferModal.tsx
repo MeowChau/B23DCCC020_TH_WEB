@@ -1,32 +1,35 @@
 import React from 'react';
 import { Modal, Form, Select, Button } from 'antd';
+import type { FormInstance } from 'antd';
 import type { Club } from '@/models/club';
+
+const { Option } = Select;
 
 interface TransferModalProps {
   visible: boolean;
   onCancel: () => void;
-  onFinish: (values: { newClubId: string }) => void;
-  clubs: Club[];
+  onSubmit: (values: { newClubId: string }) => void;
   selectedCount: number;
+  clubs: Club[];
+  form: FormInstance;
 }
 
 const TransferModal: React.FC<TransferModalProps> = ({
   visible,
   onCancel,
-  onFinish,
-  clubs,
+  onSubmit,
   selectedCount,
+  clubs,
+  form,
 }) => {
-  const [form] = Form.useForm();
-
   return (
     <Modal
-      title={`Chuyển ${selectedCount} thành viên`}
+      title={`Chuyển CLB (${selectedCount} thành viên)`}
       visible={visible}
       onCancel={onCancel}
       footer={null}
     >
-      <Form form={form} onFinish={onFinish} layout="vertical">
+      <Form form={form} onFinish={onSubmit} layout="vertical">
         <Form.Item
           name="newClubId"
           label="Câu lạc bộ mới"
@@ -34,9 +37,9 @@ const TransferModal: React.FC<TransferModalProps> = ({
         >
           <Select placeholder="Chọn câu lạc bộ">
             {clubs.map((club) => (
-              <Select.Option key={club.id} value={club.id}>
+              <Option key={club.id} value={club.id}>
                 {club.name}
-              </Select.Option>
+              </Option>
             ))}
           </Select>
         </Form.Item>
@@ -50,4 +53,4 @@ const TransferModal: React.FC<TransferModalProps> = ({
   );
 };
 
-export default TransferModal; 
+export default TransferModal;

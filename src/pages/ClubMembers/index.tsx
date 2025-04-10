@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
-import { Button, Table, Space, Modal, Form, Select, message } from 'antd';
+import { Button, Space, message, Form } from 'antd';
 import { SwapOutlined, ExportOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { useParams } from 'react-router-dom'; // You'll need to install this
-import { getClubMembers, transferMembers, exportClubMembers } from '@/services/club';
+import { useParams } from 'react-router-dom';
+import { getClubMembers, transferMembers, exportClubMembers, getClubs } from '@/services/club';
+import MemberTable from '@/components/Member/MemberTable';
+import TransferModal from '@/components/Member/TransferModal';
 import type { Member } from '@/models/club';
-
-const { Option } = Select;
 
 const ClubMembers: React.FC = () => {
   const { clubId } = useParams<{ clubId: string }>();
@@ -15,10 +15,15 @@ const ClubMembers: React.FC = () => {
   const [selectedRows, setSelectedRows] = useState<Member[]>([]);
   const [transferModalVisible, setTransferModalVisible] = useState(false);
 
+  // Fetch danh sách thành viên
   const { data: members, loading, refresh } = useRequest(() => getClubMembers(clubId), {
     refreshDeps: [clubId],
   });
 
+  // Fetch danh sách CLB
+  const { data: clubs } = useRequest(getClubs);
+
+  // Xử lý chuyển CLB
   const handleTransfer = async (values: { newClubId: string }) => {
     if (selectedRows.length === 0) return;
 
@@ -37,6 +42,7 @@ const ClubMembers: React.FC = () => {
     }
   };
 
+  // Xử lý xuất danh sách thành viên
   const handleExport = async () => {
     try {
       const blob = await exportClubMembers(clubId);
@@ -51,54 +57,6 @@ const ClubMembers: React.FC = () => {
     } catch (error) {
       message.error('Có lỗi xảy ra khi xuất file');
     }
-  };
-
-  const columns = [
-    {
-      title: 'Họ tên',
-      dataIndex: 'name',
-      key: 'name',
-      sorter: true,
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-    },
-    {
-      title: 'SĐT',
-      dataIndex: 'phone',
-      key: 'phone',
-    },
-    {
-      title: 'Giới tính',
-      dataIndex: 'gender',
-      key: 'gender',
-      render: (gender: string) => {
-        const genderMap = {
-          male: 'Nam',
-          female: 'Nữ',
-          other: 'Khác',
-        };
-        return genderMap[gender as keyof typeof genderMap] || gender;
-      },
-    },
-    {
-      title: 'Địa chỉ',
-      dataIndex: 'address',
-      key: 'address',
-    },
-    {
-      title: 'Sở trường',
-      dataIndex: 'skills',
-      key: 'skills',
-    },
-  ];
-
-  const rowSelection = {
-    onChange: (_: React.Key[], selected: Member[]) => {
-      setSelectedRows(selected);
-    },
   };
 
   return (
@@ -122,44 +80,26 @@ const ClubMembers: React.FC = () => {
         </Space>
       </div>
 
-      <Table
-        rowSelection={{
-          type: 'checkbox',
-          ...rowSelection,
-        }}
-        columns={columns}
-        dataSource={members?.data}
+      <MemberTable
+        data={members?.data?.filter((member) => member.status === 'approved') || []} // Chỉ hiển thị thành viên đã duyệt
         loading={loading}
-        rowKey="id"
+        onRowSelect={setSelectedRows}
+        onView={(member) => console.log('View member:', member)}
+        onEdit={(member) => console.log('Edit member:', member)}
+        onDelete={(member) => console.log('Delete member:', member)}
+        onHistory={(member) => console.log('View history of member:', member)}
       />
 
-      <Modal
-        title="Chuyển câu lạc bộ"
+      <TransferModal
         visible={transferModalVisible}
         onCancel={() => setTransferModalVisible(false)}
-        footer={null}
-      >
-        <Form form={form} onFinish={handleTransfer} layout="vertical">
-          <Form.Item
-            name="newClubId"
-            label="Câu lạc bộ mới"
-            rules={[{ required: true, message: 'Vui lòng chọn câu lạc bộ' }]}
-          >
-            <Select placeholder="Chọn câu lạc bộ">
-              {/* TODO: Load clubs from API */}
-              <Option value="club1">Câu lạc bộ 1</Option>
-              <Option value="club2">Câu lạc bộ 2</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              Xác nhận
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+        onSubmit={handleTransfer}
+        selectedCount={selectedRows.length}
+        clubs={clubs?.data || []}
+        form={form}
+      />
     </PageContainer>
   );
 };
 
-export default ClubMembers; 
+export default ClubMembers;

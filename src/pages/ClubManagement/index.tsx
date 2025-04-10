@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
-import { Button, Table, Space, Modal, message, Form } from 'antd';
+import { Button, Table, Space, Modal, message, Form, Input } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined } from '@ant-design/icons';
 import ClubForm from '@/components/Club/ClubForm';
 import StatusTag from '@/components/Common/StatusTag';
+import MemberListModal from '@/components/Club/MemberListModal';
 
 interface Club {
   id: string;
@@ -11,14 +12,18 @@ interface Club {
   avatar: string;
   establishmentDate: string;
   president: string;
+  description: string;
   isActive: boolean;
 }
 
 const ClubManagement: React.FC = () => {
   const [form] = Form.useForm();
   const [modalVisible, setModalVisible] = useState(false);
+  const [memberModalVisible, setMemberModalVisible] = useState(false);
   const [editingClub, setEditingClub] = useState<Club | null>(null);
   const [clubs, setClubs] = useState<Club[]>([]);
+  const [members, setMembers] = useState([]); // Danh sách thành viên của CLB được chọn
+  const [searchText, setSearchText] = useState('');
 
   // Hàm tải dữ liệu từ localStorage
   const loadClubs = () => {
@@ -72,6 +77,17 @@ const ClubManagement: React.FC = () => {
     }
   };
 
+  const handleSearch = (value: string) => {
+    setSearchText(value);
+  };
+
+  const filteredClubs = clubs.filter((club) =>
+    club.name.toLowerCase().includes(searchText.toLowerCase()) ||
+    club.president.toLowerCase().includes(searchText.toLowerCase()) || // Tìm theo chủ nhiệm CLB
+    club.description.toLowerCase().includes(searchText.toLowerCase()) || // Tìm theo mô tả
+    club.establishmentDate.includes(searchText) // Tìm theo ngày thành lập
+  );
+
   const columns = [
     {
       title: 'Ảnh đại diện',
@@ -85,13 +101,14 @@ const ClubManagement: React.FC = () => {
       title: 'Tên câu lạc bộ',
       dataIndex: 'name',
       key: 'name',
-      sorter: true,
+      sorter: (a: Club, b: Club) => a.name.localeCompare(b.name),
     },
     {
       title: 'Ngày thành lập',
       dataIndex: 'establishmentDate',
       key: 'establishmentDate',
-      sorter: true,
+      sorter: (a: Club, b: Club) =>
+        new Date(a.establishmentDate).getTime() - new Date(b.establishmentDate).getTime(),
     },
     {
       title: 'Chủ nhiệm CLB',
@@ -123,7 +140,10 @@ const ClubManagement: React.FC = () => {
           <Button
             type="link"
             icon={<TeamOutlined />}
-            onClick={() => console.log(`Xem thành viên của CLB ${record.id}`)}
+            onClick={() => {
+              setMembers([]); // TODO: Lấy danh sách thành viên từ API hoặc localStorage
+              setMemberModalVisible(true);
+            }}
           >
             Thành viên
           </Button>
@@ -149,6 +169,11 @@ const ClubManagement: React.FC = () => {
   return (
     <PageContainer>
       <div style={{ marginBottom: 16 }}>
+        <Input.Search
+          placeholder="Tìm kiếm câu lạc bộ"
+          onSearch={handleSearch}
+          style={{ width: 300, marginRight: 16 }}
+        />
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -163,7 +188,7 @@ const ClubManagement: React.FC = () => {
       </div>
 
       <Table
-        dataSource={clubs}
+        dataSource={filteredClubs}
         rowKey="id"
         columns={columns}
       />
@@ -187,6 +212,12 @@ const ClubManagement: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      <MemberListModal
+        visible={memberModalVisible}
+        onCancel={() => setMemberModalVisible(false)}
+        members={members}
+      />
     </PageContainer>
   );
 };
