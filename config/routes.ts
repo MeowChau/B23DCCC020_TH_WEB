@@ -15,7 +15,8 @@
 			},
 		],
 	},
-
+	
+	
 	///////////////////////////////////
 // DEFAULT MENU
 	{
@@ -37,12 +38,33 @@
 		icon: 'ArrowsAltOutlined',
 	},
 	{
-		name: 'Quản lý đơn hàng',
-		path: '/don-hang',
-		icon: 'ShoppingCartOutlined',
-		component: './Order/OrderPage', 
-	  },
-	
+        path: '/club',
+        name: 'Club',
+        icon: 'TeamOutlined',
+        routes: [
+            {
+                path: '/club/clubs',
+                name: 'Quản lý câu lạc bộ',
+                component: '@/pages/ClubManagement',
+            },
+            {
+                path: '/club/member-registration',
+                name: 'Quản lý đăng ký',
+                component: '@/pages/MemberRegistration',
+            },
+            {
+                path: '/club/club-members/:clubId',
+                name: 'Thành viên câu lạc bộ',
+                component: '@/pages/ClubMembers',
+             
+            },
+            {
+                path: '/club/statistics',
+                name: 'Thống kê',
+                component: '@/pages/Statistics',
+            },
+        ],
+    },
 	// DANH MUC HE THONG
 	// {
 	// 	name: 'DanhMuc',
