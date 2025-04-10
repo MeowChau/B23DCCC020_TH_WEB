@@ -12,7 +12,8 @@ interface MemberApplicationFormProps {
   initialValues?: Partial<Member>;
   clubs: { id: string; name: string }[];
   loading?: boolean;
-  onCancel?: () => void; // Thêm callback để xử lý nút "Hủy"
+  onCancel?: () => void;
+  visible?: boolean; // Thêm prop visible
 }
 
 const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({
@@ -22,7 +23,12 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({
   clubs,
   loading = false,
   onCancel,
+  visible = true, // Giá trị mặc định là true
 }) => {
+  if (!visible) {
+    return null; // Không hiển thị gì nếu visible là false
+  }
+
   return (
     <Form
       form={form}
@@ -91,15 +97,11 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({
         rules={[{ required: true, message: 'Vui lòng chọn câu lạc bộ' }]}
       >
         <Select placeholder="Chọn câu lạc bộ" disabled={clubs.length === 0}>
-          {clubs.length > 0 ? (
-            clubs.map((club) => (
-              <Option key={club.id} value={club.id}>
-                {club.name}
-              </Option>
-            ))
-          ) : (
-            <Option disabled>Không có câu lạc bộ nào</Option>
-          )}
+          {clubs.map((club) => (
+            <Option key={club.id} value={club.id}>
+              {club.name}
+            </Option>
+          ))}
         </Select>
       </Form.Item>
 
@@ -129,5 +131,4 @@ const MemberApplicationForm: React.FC<MemberApplicationFormProps> = ({
     </Form>
   );
 };
-
 export default MemberApplicationForm;

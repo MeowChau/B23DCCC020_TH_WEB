@@ -1,38 +1,50 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
-import { Button, Space, Modal, Form, message, Tag, Table } from 'antd';
-import { CheckOutlined, CloseOutlined, PlusOutlined, EyeOutlined, EditOutlined, DeleteOutlined, HistoryOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
-import { getMemberApplications, updateMemberStatus, deleteMemberApplication, getActionHistory } from '@/services/club';
+import { Button, Space, Modal, Form, message } from 'antd';
+import { CheckOutlined, CloseOutlined, PlusOutlined } from '@ant-design/icons';
+import { updateMemberStatus, deleteMemberApplication } from '@/services/club';
 import MemberApplicationForm from '@/components/Member/MemberApplicationForm';
+import MemberTable from '@/components/Member/MemberTable';
+import ActionHistoryModal from '@/components/Member/ActionHistoryModal';
+import RejectReasonModal from '@/components/Member/RejectReasonModal';
 import type { Member } from '@/models/club';
 
 const MemberRegistration: React.FC = () => {
   const [form] = Form.useForm();
+  const [applications, setApplications] = useState<{ data: Member[] }>({ data: [] });
+  const [loading, setLoading] = useState<boolean>(false);
   const [selectedRows, setSelectedRows] = useState<Member[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [actionHistory, setActionHistory] = useState<any[]>([]);
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
 
-  const { data: applications, loading, refresh } = useRequest(async () => {
-    const response = await getMemberApplications();
-    return {
-      ...response,
-      clubs: [], // Removed reference to `response.clubs` as it does not exist in the type
-    };
-  });
+  // Fetch applications data
+  const fetchApplications = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/applications');
+      const data = await response.json();
+      setApplications({ data });
+    } catch (error) {
+      message.error('Không thể tải dữ liệu');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Hiển thị trạng thái
-  const renderStatus = useCallback((status: string) => {
-    const statusMap = {
-      pending: { color: 'orange', text: 'Chờ duyệt' },
-      approved: { color: 'green', text: 'Đã duyệt' },
-      rejected: { color: 'red', text: 'Từ chối' },
-    };
-    const statusInfo = statusMap[status as keyof typeof statusMap];
-    return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
+  React.useEffect(() => {
+    fetchApplications();
   }, []);
+
+  // Danh sách câu lạc bộ cố định
+  const fixedClubs = [
+    { id: '1', name: 'Câu lạc bộ A' },
+    { id: '2', name: 'Câu lạc bộ B' },
+    { id: '3', name: 'Câu lạc bộ C' },
+  ];
 
   // Xử lý thêm mới hoặc chỉnh sửa
   const handleCreateOrUpdate = async (values: any) => {
@@ -41,99 +53,69 @@ const MemberRegistration: React.FC = () => {
         await updateMemberStatus(editingMember.id, values);
         message.success('Cập nhật đơn đăng ký thành công');
       } else {
-        // Add your create API logic here
+        const newApplication = {
+          id: String(Date.now()),
+          ...values,
+          status: 'pending',
+        };
+        setApplications((prev) => ({
+          data: [...prev.data, newApplication],
+        }));
         message.success('Thêm mới đơn đăng ký thành công');
       }
       setModalVisible(false);
-      refresh();
     } catch (error) {
       message.error('Có lỗi xảy ra');
     }
   };
 
-  // Xử lý xóa
-  const handleDelete = async (id: string) => {
+  // Xử lý duyệt
+  const handleApprove = async () => {
     try {
-      await deleteMemberApplication(id);
-      message.success('Xóa đơn đăng ký thành công');
-      refresh();
+      for (const row of selectedRows) {
+        await updateMemberStatus(row.id, { status: 'approved' });
+        setActionHistory((prev) => [
+          ...prev,
+          {
+            action: 'Approved',
+            timestamp: new Date().toLocaleString(),
+            reason: 'N/A',
+            admin: 'Admin',
+          },
+        ]);
+      }
+      message.success('Đã duyệt các đơn đăng ký được chọn');
+      fetchApplications();
+      setSelectedRows([]);
     } catch (error) {
-      message.error('Có lỗi xảy ra');
+      message.error('Có lỗi xảy ra khi duyệt các đơn đăng ký');
     }
   };
 
-  // Lấy lịch sử thao tác
-  const fetchActionHistory = async (memberId: string) => {
+  // Xử lý từ chối
+  const handleReject = async () => {
     try {
-      const history = await getActionHistory(memberId);
-      setActionHistory(history as any[]);
-      setHistoryVisible(true);
+      for (const row of selectedRows) {
+        await updateMemberStatus(row.id, { status: 'rejected', reason: rejectReason });
+        setActionHistory((prev) => [
+          ...prev,
+          {
+            action: 'Rejected',
+            timestamp: new Date().toLocaleString(),
+            reason: rejectReason,
+            admin: 'Admin',
+          },
+        ]);
+      }
+      message.success('Đã từ chối các đơn đăng ký được chọn');
+      fetchApplications();
+      setSelectedRows([]);
+      setRejectModalVisible(false);
+      setRejectReason('');
     } catch (error) {
-      message.error('Không thể lấy lịch sử thao tác');
+      message.error('Có lỗi xảy ra khi từ chối các đơn đăng ký');
     }
   };
-
-  // Xử lý xem chi tiết
-  const handleView = (record: Member) => {
-    Modal.info({
-      title: 'Chi tiết đơn đăng ký',
-      content: (
-        <div>
-          <p><b>Họ tên:</b> {record.name}</p>
-          <p><b>Email:</b> {record.email}</p>
-          <p><b>SĐT:</b> {record.phone}</p>
-          <p><b>Giới tính:</b> {record.gender}</p>
-          <p><b>Địa chỉ:</b> {record.address}</p>
-          <p><b>Sở trường:</b> {record.skills}</p>
-          <p><b>Câu lạc bộ:</b> {record.clubId}</p>
-          <p><b>Lý do đăng ký:</b> {record.reason}</p>
-          <p><b>Trạng thái:</b> {record.status}</p>
-          <p><b>Ghi chú:</b> {record.notes}</p>
-        </div>
-      ),
-    });
-  };
-
-  // Xử lý chỉnh sửa
-  const handleEdit = (record: Member) => {
-    setEditingMember(record);
-    form.setFieldsValue(record);
-    setModalVisible(true);
-  };
-
-  // Cột của bảng
-  const columns = [
-    { title: 'Họ tên', dataIndex: 'name', key: 'name', sorter: true },
-    { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'SĐT', dataIndex: 'phone', key: 'phone' },
-    { title: 'Giới tính', dataIndex: 'gender', key: 'gender' },
-    { title: 'Địa chỉ', dataIndex: 'address', key: 'address' },
-    { title: 'Sở trường', dataIndex: 'skills', key: 'skills' },
-    { title: 'Câu lạc bộ', dataIndex: 'clubId', key: 'clubId' },
-    { title: 'Lý do đăng ký', dataIndex: 'reason', key: 'reason' },
-    { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: renderStatus },
-    { title: 'Ghi chú', dataIndex: 'note', key: 'note' },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      render: (_: any, record: Member) => (
-        <Space size="middle">
-          <Button type="link" icon={<EyeOutlined />} onClick={() => handleView(record)}>
-            Xem
-          </Button>
-          <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
-            Sửa
-          </Button>
-          <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)}>
-            Xóa
-          </Button>
-          <Button type="link" icon={<HistoryOutlined />} onClick={() => fetchActionHistory(record.id)}>
-            Lịch sử
-          </Button>
-        </Space>
-      ),
-    },
-  ];
 
   return (
     <PageContainer>
@@ -154,7 +136,7 @@ const MemberRegistration: React.FC = () => {
             type="primary"
             icon={<CheckOutlined />}
             disabled={selectedRows.length === 0}
-            onClick={() => message.info('Duyệt nhiều đơn đăng ký chưa được triển khai')}
+            onClick={handleApprove}
           >
             Duyệt ({selectedRows.length})
           </Button>
@@ -162,59 +144,88 @@ const MemberRegistration: React.FC = () => {
             danger
             icon={<CloseOutlined />}
             disabled={selectedRows.length === 0}
-            onClick={() => message.info('Từ chối nhiều đơn đăng ký chưa được triển khai')}
+            onClick={() => setRejectModalVisible(true)}
           >
             Từ chối ({selectedRows.length})
           </Button>
         </Space>
       </div>
 
-      <Table
-        rowSelection={{
-          type: 'checkbox',
-          onChange: (_, newSelectedRows) => setSelectedRows(newSelectedRows),
-        }}
-        columns={columns}
-        dataSource={applications?.data || []}
+      <MemberTable
+        data={applications.data}
         loading={loading}
-        rowKey="id"
-        locale={{ emptyText: 'Không có dữ liệu' }}
+        onRowSelect={setSelectedRows}
+        onView={(record) => {
+          Modal.info({
+            title: 'Chi tiết đơn đăng ký',
+            content: (
+              <div>
+                <p><b>Họ tên:</b> {record.name}</p>
+                <p><b>Email:</b> {record.email}</p>
+                <p><b>SĐT:</b> {record.phone}</p>
+                <p><b>Giới tính:</b> {record.gender}</p>
+                <p><b>Địa chỉ:</b> {record.address}</p>
+                <p><b>Sở trường:</b> {record.skills}</p>
+                <p><b>Câu lạc bộ:</b> {record.clubId}</p>
+                <p><b>Lý do đăng ký:</b> {record.reason}</p>
+                <p><b>Trạng thái:</b> {record.status}</p>
+                <p><b>Ghi chú:</b> {record.notes}</p>
+              </div>
+            ),
+          });
+        }}
+        onEdit={(record) => {
+          setEditingMember(record);
+          form.setFieldsValue(record);
+          setModalVisible(true);
+        }}
+        onDelete={async (id) => {
+          try {
+            await deleteMemberApplication(id);
+            message.success('Xóa đơn đăng ký thành công');
+            fetchApplications();
+          } catch (error) {
+            message.error('Có lỗi xảy ra khi xóa đơn đăng ký');
+          }
+        }}
+        onHistory={(id) => {
+          const fetchActionHistory = async (memberId: string) => {
+            try {
+              const response = await fetch(`/api/action-history/${memberId}`);
+              const data = await response.json();
+              setActionHistory(data);
+            } catch (error) {
+              message.error('Không thể tải lịch sử hành động');
+            }
+          };
+
+          fetchActionHistory(id);
+          setHistoryVisible(true);
+        }}
       />
 
-      <Modal
-        title={editingMember ? 'Chỉnh sửa đơn đăng ký' : 'Thêm mới đơn đăng ký'}
+      <MemberApplicationForm
+        form={form}
         visible={modalVisible}
         onCancel={() => setModalVisible(false)}
-        footer={null}
-      >
-        <MemberApplicationForm
-          form={form}
-          onFinish={handleCreateOrUpdate}
-          initialValues={editingMember || {}}
-          clubs={applications?.clubs || []} // Đảm bảo truyền danh sách câu lạc bộ
-          loading={loading}
-          onCancel={() => setModalVisible(false)}
-        />
-      </Modal>
+        onFinish={handleCreateOrUpdate}
+        initialValues={editingMember || {}}
+        clubs={fixedClubs}
+      />
 
-      <Modal
-        title="Lịch sử thao tác"
+      <RejectReasonModal
+        visible={rejectModalVisible}
+        onCancel={() => setRejectModalVisible(false)}
+        onOk={handleReject}
+        reason={rejectReason}
+        setReason={setRejectReason}
+      />
+
+      <ActionHistoryModal
         visible={historyVisible}
         onCancel={() => setHistoryVisible(false)}
-        footer={null}
-      >
-        <Table
-          dataSource={actionHistory}
-          columns={[
-            { title: 'Hành động', dataIndex: 'action', key: 'action' },
-            { title: 'Thời gian', dataIndex: 'timestamp', key: 'timestamp' },
-            { title: 'Lý do', dataIndex: 'reason', key: 'reason' },
-            { title: 'Người thực hiện', dataIndex: 'admin', key: 'admin' },
-          ]}
-          rowKey="id"
-          pagination={false}
-        />
-      </Modal>
+        data={actionHistory}
+      />
     </PageContainer>
   );
 };
