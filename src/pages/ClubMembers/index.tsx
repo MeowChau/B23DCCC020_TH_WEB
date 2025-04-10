@@ -1,61 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import { Button, Space, message, Form } from 'antd';
-import { SwapOutlined, ExportOutlined } from '@ant-design/icons';
-import { useRequest } from 'ahooks';
-import { useParams } from 'react-router-dom';
-import { getClubMembers, transferMembers, exportClubMembers, getClubs } from '@/services/club';
+import { SwapOutlined } from '@ant-design/icons';
 import MemberTable from '@/components/Member/MemberTable';
 import TransferModal from '@/components/Member/TransferModal';
 import type { Member } from '@/models/club';
 
 const ClubMembers: React.FC = () => {
-  const { clubId } = useParams<{ clubId: string }>();
   const [form] = Form.useForm();
   const [selectedRows, setSelectedRows] = useState<Member[]>([]);
   const [transferModalVisible, setTransferModalVisible] = useState(false);
+  const [approvedMembers, setApprovedMembers] = useState<Member[]>([]);
 
-  // Fetch danh sách thành viên
-  const { data: members, loading, refresh } = useRequest(() => getClubMembers(clubId), {
-    refreshDeps: [clubId],
-  });
+  // Hàm tải danh sách thành viên đã duyệt từ localStorage
+  const loadApprovedMembersFromLocalStorage = () => {
+    const storedApprovedMembers = JSON.parse(localStorage.getItem('approvedMembers') || '[]');
+    // Loại bỏ các thành viên trùng lặp dựa trên `id`
+    const uniqueMembers = storedApprovedMembers.filter(
+      (member: Member, index: number, self: Member[]) =>
+        index === self.findIndex((m) => m.id === member.id)
+    );
+    setApprovedMembers(uniqueMembers);
+  };
 
-  // Fetch danh sách CLB
-  const { data: clubs } = useRequest(getClubs);
+  useEffect(() => {
+    loadApprovedMembersFromLocalStorage(); // Tải danh sách thành viên đã duyệt khi component được mount
+  }, []);
 
   // Xử lý chuyển CLB
   const handleTransfer = async (values: { newClubId: string }) => {
     if (selectedRows.length === 0) return;
 
     try {
-      await transferMembers({
-        memberIds: selectedRows.map((member) => member.id),
-        newClubId: values.newClubId,
+      // Cập nhật câu lạc bộ mới cho thành viên
+      const updatedMembers = approvedMembers.map((member) =>
+        selectedRows.some((row) => row.id === member.id)
+          ? { ...member, clubId: values.newClubId }
+          : member
+      );
+
+      // Lưu danh sách thành viên đã cập nhật vào localStorage
+      localStorage.setItem('approvedMembers', JSON.stringify(updatedMembers));
+      setApprovedMembers(updatedMembers);
+
+      // Lưu thành viên vào câu lạc bộ mới trong localStorage
+      const storedClubs = JSON.parse(localStorage.getItem('clubs') || '[]');
+      const updatedClubs = storedClubs.map((club: any) => {
+        if (club.id === values.newClubId) {
+          const updatedClubMembers = [...(club.members || []), ...selectedRows];
+          return { ...club, members: updatedClubMembers };
+        }
+        return club;
       });
+      localStorage.setItem('clubs', JSON.stringify(updatedClubs));
 
       message.success(`Chuyển ${selectedRows.length} thành viên thành công`);
       setTransferModalVisible(false);
       setSelectedRows([]);
-      refresh();
     } catch (error) {
       message.error('Có lỗi xảy ra');
-    }
-  };
-
-  // Xử lý xuất danh sách thành viên
-  const handleExport = async () => {
-    try {
-      const blob = await exportClubMembers(clubId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `club-members-${clubId}.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      message.error('Có lỗi xảy ra khi xuất file');
     }
   };
 
@@ -71,18 +74,12 @@ const ClubMembers: React.FC = () => {
           >
             Chuyển CLB ({selectedRows.length})
           </Button>
-          <Button
-            icon={<ExportOutlined />}
-            onClick={handleExport}
-          >
-            Xuất danh sách
-          </Button>
         </Space>
       </div>
 
       <MemberTable
-        data={members?.data?.filter((member) => member.status === 'approved') || []} // Chỉ hiển thị thành viên đã duyệt
-        loading={loading}
+        data={approvedMembers} // Hiển thị danh sách thành viên đã duyệt
+        loading={false}
         onRowSelect={setSelectedRows}
         onView={(member) => console.log('View member:', member)}
         onEdit={(member) => console.log('Edit member:', member)}
@@ -95,8 +92,8 @@ const ClubMembers: React.FC = () => {
         onCancel={() => setTransferModalVisible(false)}
         onSubmit={handleTransfer}
         selectedCount={selectedRows.length}
-        clubs={clubs?.data || []}
         form={form}
+        member={selectedRows.length === 1 ? selectedRows[0] : null} // Pass the first selected member or null
       />
     </PageContainer>
   );

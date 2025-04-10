@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import { Button, Space, Modal, Form, message } from 'antd';
 import { CheckOutlined, CloseOutlined, PlusOutlined } from '@ant-design/icons';
-import { updateMemberStatus, deleteMemberApplication } from '@/services/club';
+import { updateMemberStatus } from '@/services/club';
 import MemberApplicationForm from '@/components/Member/MemberApplicationForm';
 import MemberTable from '@/components/Member/MemberTable';
 import ActionHistoryModal from '@/components/Member/ActionHistoryModal';
@@ -12,7 +12,7 @@ import type { Member } from '@/models/club';
 const MemberRegistration: React.FC = () => {
   const [form] = Form.useForm();
   const [applications, setApplications] = useState<{ data: Member[] }>({ data: [] });
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading] = useState<boolean>(false);
   const [selectedRows, setSelectedRows] = useState<Member[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -20,47 +20,68 @@ const MemberRegistration: React.FC = () => {
   const [actionHistory, setActionHistory] = useState<any[]>([]);
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [activeClubs, setActiveClubs] = useState<{ id: string; name: string }[]>([]);
 
-  // Fetch applications data
-  const fetchApplications = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/applications');
-      const data = await response.json();
-      setApplications({ data });
-    } catch (error) {
-      message.error('Không thể tải dữ liệu');
-    } finally {
-      setLoading(false);
-    }
+  // Hàm tải dữ liệu từ localStorage
+  const loadApplicationsFromLocalStorage = () => {
+    const storedApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+    setApplications({ data: storedApplications });
+  };
+
+  // Hàm lưu dữ liệu vào localStorage
+  const saveApplicationsToLocalStorage = (newApplication: Member) => {
+    const storedApplications = JSON.parse(localStorage.getItem('applications') || '[]');
+    const updatedApplications = [...storedApplications, newApplication];
+    localStorage.setItem('applications', JSON.stringify(updatedApplications));
+    setApplications({ data: updatedApplications });
+  };
+
+  // Lưu lịch sử thao tác vào localStorage
+  const saveActionHistoryToLocalStorage = (newAction: any) => {
+    const storedHistory = JSON.parse(localStorage.getItem('actionHistory') || '[]');
+    const updatedHistory = [...storedHistory, newAction];
+    localStorage.setItem('actionHistory', JSON.stringify(updatedHistory));
+    setActionHistory(updatedHistory);
+  };
+
+  // Lấy danh sách câu lạc bộ đang hoạt động từ localStorage
+  const fetchActiveClubs = () => {
+    const storedClubs = JSON.parse(localStorage.getItem('clubs') || '[]');
+    const filteredClubs = storedClubs.filter((club: { isActive: boolean }) => club.isActive); // Lọc các câu lạc bộ đang hoạt động
+    setActiveClubs(filteredClubs.map((club: { id: string; name: string }) => ({ id: club.id, name: club.name })));
   };
 
   React.useEffect(() => {
-    fetchApplications();
+    loadApplicationsFromLocalStorage(); // Tải dữ liệu từ localStorage
+    fetchActiveClubs(); // Lấy danh sách câu lạc bộ khi component được mount
   }, []);
 
-  // Danh sách câu lạc bộ cố định
-  const fixedClubs = [
-    { id: '1', name: 'Câu lạc bộ A' },
-    { id: '2', name: 'Câu lạc bộ B' },
-    { id: '3', name: 'Câu lạc bộ C' },
-  ];
+  // Lưu ứng viên đã được duyệt vào localStorage
+  const saveApprovedMembersToLocalStorage = (approvedMembers: Member[]) => {
+    const storedMembers = JSON.parse(localStorage.getItem('approvedMembers') || '[]');
+    const updatedMembers = [...storedMembers, ...approvedMembers];
+    localStorage.setItem('approvedMembers', JSON.stringify(updatedMembers));
+  };
 
   // Xử lý thêm mới hoặc chỉnh sửa
   const handleCreateOrUpdate = async (values: any) => {
     try {
       if (editingMember) {
-        await updateMemberStatus(editingMember.id, values);
+        // Cập nhật ứng viên
+        const updatedApplications = applications.data.map((app) =>
+          app.id === editingMember.id ? { ...app, ...values } : app
+        );
+        localStorage.setItem('applications', JSON.stringify(updatedApplications));
+        setApplications({ data: updatedApplications });
         message.success('Cập nhật đơn đăng ký thành công');
       } else {
+        // Thêm ứng viên mới
         const newApplication = {
           id: String(Date.now()),
           ...values,
           status: 'pending',
         };
-        setApplications((prev) => ({
-          data: [...prev.data, newApplication],
-        }));
+        saveApplicationsToLocalStorage(newApplication); // Lưu vào localStorage
         message.success('Thêm mới đơn đăng ký thành công');
       }
       setModalVisible(false);
@@ -72,20 +93,23 @@ const MemberRegistration: React.FC = () => {
   // Xử lý duyệt
   const handleApprove = async () => {
     try {
+      const approvedMembers: Member[] = [];
       for (const row of selectedRows) {
         await updateMemberStatus(row.id, { status: 'approved' });
-        setActionHistory((prev) => [
-          ...prev,
-          {
-            action: 'Approved',
-            timestamp: new Date().toLocaleString(),
-            reason: 'N/A',
-            admin: 'Admin',
-          },
-        ]);
+        approvedMembers.push({ ...row, status: 'approved' });
+
+        // Lưu lịch sử thao tác
+        saveActionHistoryToLocalStorage({
+          memberId: row.id,
+          action: 'Approved',
+          timestamp: new Date().toLocaleString(),
+          reason: 'N/A',
+          admin: 'Admin',
+        });
       }
+      saveApprovedMembersToLocalStorage(approvedMembers); // Lưu vào localStorage
       message.success('Đã duyệt các đơn đăng ký được chọn');
-      fetchApplications();
+      loadApplicationsFromLocalStorage(); // Tải lại dữ liệu từ localStorage
       setSelectedRows([]);
     } catch (error) {
       message.error('Có lỗi xảy ra khi duyệt các đơn đăng ký');
@@ -97,18 +121,18 @@ const MemberRegistration: React.FC = () => {
     try {
       for (const row of selectedRows) {
         await updateMemberStatus(row.id, { status: 'rejected', reason: rejectReason });
-        setActionHistory((prev) => [
-          ...prev,
-          {
-            action: 'Rejected',
-            timestamp: new Date().toLocaleString(),
-            reason: rejectReason,
-            admin: 'Admin',
-          },
-        ]);
+
+        // Lưu lịch sử thao tác
+        saveActionHistoryToLocalStorage({
+          memberId: row.id,
+          action: 'Rejected',
+          timestamp: new Date().toLocaleString(),
+          reason: rejectReason,
+          admin: 'Admin',
+        });
       }
       message.success('Đã từ chối các đơn đăng ký được chọn');
-      fetchApplications();
+      loadApplicationsFromLocalStorage(); // Tải lại dữ liệu từ localStorage
       setSelectedRows([]);
       setRejectModalVisible(false);
       setRejectReason('');
@@ -174,33 +198,21 @@ const MemberRegistration: React.FC = () => {
             ),
           });
         }}
+        onHistory={(id) => {
+          const memberHistory = actionHistory.filter((action) => action.memberId === id);
+          setActionHistory(memberHistory);
+          setHistoryVisible(true);
+        }}
         onEdit={(record) => {
           setEditingMember(record);
           form.setFieldsValue(record);
           setModalVisible(true);
         }}
-        onDelete={async (id) => {
-          try {
-            await deleteMemberApplication(id);
-            message.success('Xóa đơn đăng ký thành công');
-            fetchApplications();
-          } catch (error) {
-            message.error('Có lỗi xảy ra khi xóa đơn đăng ký');
-          }
-        }}
-        onHistory={(id) => {
-          const fetchActionHistory = async (memberId: string) => {
-            try {
-              const response = await fetch(`/api/action-history/${memberId}`);
-              const data = await response.json();
-              setActionHistory(data);
-            } catch (error) {
-              message.error('Không thể tải lịch sử hành động');
-            }
-          };
-
-          fetchActionHistory(id);
-          setHistoryVisible(true);
+        onDelete={(id) => {
+          const updatedApplications = applications.data.filter((app) => app.id !== id);
+          localStorage.setItem('applications', JSON.stringify(updatedApplications));
+          setApplications({ data: updatedApplications });
+          message.success('Xóa đơn đăng ký thành công');
         }}
       />
 
@@ -210,7 +222,7 @@ const MemberRegistration: React.FC = () => {
         onCancel={() => setModalVisible(false)}
         onFinish={handleCreateOrUpdate}
         initialValues={editingMember || {}}
-        clubs={fixedClubs}
+        clubs={activeClubs}
       />
 
       <RejectReasonModal
