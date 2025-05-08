@@ -60,5 +60,6 @@ export default function access(initialState: IInitialState) {
 		//     : (route: any) => {
 		//         return handlePhanNhom(initialState, route?.maChucNang) || false;
 		//       },
+		canAdmin: true, // Tạm thời cho phép tất cả truy cập trang Admin
 	};
 }

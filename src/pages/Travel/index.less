@@ -1,0 +1,63 @@
+.container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+}
+
+.filters {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
+
+  @media (max-width: 768px) {
+    padding: 12px;
+  }
+}
+
+.destinationsGrid {
+  margin-top: 24px;
+}
+
+.destinationCard {
+  height: 100%;
+  
+  :global {
+    .ant-card-cover {
+      height: 200px;
+      overflow: hidden;
+      
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .ant-card-meta-title {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .ant-card-meta-description {
+      > div {
+        margin-top: 8px;
+      }
+    }
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 576px) {
+  .destinationCard {
+    :global {
+      .ant-card-cover {
+        height: 160px;
+      }
+    }
+  }
+} 

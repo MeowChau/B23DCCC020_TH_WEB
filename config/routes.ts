@@ -25,46 +25,51 @@
 		component: './TrangChu',
 		icon: 'HomeOutlined',
 	},
-	{
-		path: '/gioi-thieu',
-		name: 'About',
-		component: './TienIch/GioiThieu',
-		hideInMenu: true,
-	},
+
 	{
 		path: '/random-user',
 		name: 'RandomUser',
 		component: './RandomUser',
 		icon: 'ArrowsAltOutlined',
 	},
+
+	// TRAVEL PLANNING MODULE
 	{
-        path: '/club',
-        name: 'Club',
-        icon: 'TeamOutlined',
-        routes: [
-            {
-                path: '/club/clubs',
-                name: 'Quản lý câu lạc bộ',
-                component: '@/pages/ClubManagement',
-            },
-            {
-                path: '/club/member-registration',
-                name: 'Quản lý đăng ký',
-                component: '@/pages/MemberRegistration',
-            },
-            {
-                path: '/club/club-members/:clubId',
-                name: 'Thành viên câu lạc bộ',
-                component: '@/pages/ClubMembers',
-             
-            },
-            {
-                path: '/club/statistics',
-                name: 'Thống kê',
-                component: '@/pages/Statistics',
-            },
-        ],
-    },
+		path: '/travel',
+		name: 'Lập Kế Hoạch Du Lịch',
+		icon: 'CompassOutlined',
+		routes: [
+			{
+				path: '/travel',
+				redirect: '/travel/home',
+			},
+			{
+				path: '/travel/home',
+				name: 'Khám phá điểm đến',
+				component: './Travel/index',
+				icon: 'EnvironmentOutlined',
+			},
+			{
+				path: '/travel/itinerary',
+				name: 'Lịch trình',
+				component: './Travel/components/Itinerary',
+				icon: 'CalendarOutlined',
+			},
+			{
+				path: '/travel/destination/:id',
+				name: 'Chi tiết điểm đến',
+				component: './Travel/components/Destination',
+				hideInMenu: true,
+			},
+			{
+				path: '/travel/admin',
+				name: 'Quản trị',
+				component: './Travel/components/Admin',
+				icon: 'SettingOutlined',
+			},
+		],
+	},
+
 	// DANH MUC HE THONG
 	// {
 	// 	name: 'DanhMuc',
